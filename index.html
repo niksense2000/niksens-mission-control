@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NixSense Mission Control</title>
+  <style>
+    :root {
+      --bg: #0c0c11;
+      --surface: #13131d;
+      --surface2: #1c1c2a;
+      --surface3: #242433;
+      --border: #2a2a3d;
+      --text: #e2e2f0;
+      --muted: #7070a0;
+      --accent: #6366f1;
+      --accent-dim: rgba(99,102,241,0.15);
+      --red: #f87171;
+      --red-bg: rgba(248,113,113,0.1);
+      --red-border: rgba(248,113,113,0.25);
+      --yellow: #fbbf24;
+      --yellow-bg: rgba(251,191,36,0.1);
+      --yellow-border: rgba(251,191,36,0.25);
+      --green: #34d399;
+      --green-bg: rgba(52,211,153,0.1);
+      --green-border: rgba(52,211,153,0.25);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ─── Header ─── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .logo-name {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .last-update {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ─── Buttons ─── */
+    .btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-ghost {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-ghost:hover { background: var(--surface3); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* ─── Main ─── */
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+    }
+
+    /* ─── Stats ─── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .stat-sub {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ─── Panel ─── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+  2   overflow: hidden;
+    }
+
+    /* ─── Toolbar ─── */
+    .toolbar {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 2px;
+    }
+
+    .tab {
+      padding: 6px 14px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab:hover { color: var(--text); background: var(--surface2); }
+
+    .tab.active {
+      background: var(--accent-dim);
+      color: #a5b4fc;
+    }
+
+    .count-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      background: var(--surface3);
+      border-radius: 10px;
+      font-size: 10px;
+      margin-left: 4px;
+      color: var(--muted);
+    }
+
+    .tab.active .count-badge {
+      background: rgba(99,102,241,0.3);
+      color: #a5b4fc;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-input {
+      padding: 7px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 12px;
+      width: 200px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--muted); }
+
+    select.sort-select {
+      padding: 7px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ─── Table ─── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      background: var(--surface2);
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td { background: rgba(255,255,255,0.018); }
+
+    /* ─── Product cell ─── */
+    .product-name {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .product-variant {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .product-sku {
+      font-size: 10px;
+      color: var(--muted);
+      font-family: monospace;
+    }
+
+    /* ─── Status badge ─── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .badge-red { background: var(--red-bg); color: var(--red); }
+    .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-gray { background: var(--surface3); color: var(--muted); }
+
+    /* ─── Stock cell ─── */
+    .stock-val {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+
+    .stock-unit {
+      font-size: 10px;
+      color: var(--muted);
+      margin-left: 2px;
+    }
+
+    /* ─── Days bar ─── */
+    .days-bar {
+      width: 60px;
+      height: 4px;
+      background: var(--surface3);
+      border-radius: 2px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+
+    .days-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+
+    /* ─── Recommend cell ─── */
+    .recommend-val {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    /* ─── Loading ─── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── AI Section ─── */
+    .ai-wrap {
+      margin-top: 16px;
+    }
+
+    .ai-btn-big {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .ai-btn-big:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,0.3); }
+    .ai-btn-big:active { transform: translateY(0); }
+
+    .ai-output {
+      margin-top: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: none;
+    }
+
+    .ai-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .alert-block {
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+
+    .alert-title {
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .order-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .order-row:last-child { border-bottom: none; }
+
+ 2  .order-name { font-weight: 500; font-size: 13px; }
+    .order-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .order-qty {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      text-align: right;
+      line-height: 1;
+    }
+
+    .order-unit { font-size: 10px; color: var(--muted); }
+
+    .summary-pill {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 900px) {
+      .stats { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      main { padding: 12px 14px 30px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎯</div>
+    <div>
+      <div class="logo-name">NixSense Mission Control</div>
+      <div class="logo-sub">Stock Intelligence Agent</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="last-update" id="last-update"></span>
+    <button class="btn btn-ghost" onclick="loadData()">⟳ Оновити</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- Stats row -->
+  <div class="stats" id="stats">
+    <div class="stat">
+      <div class="stat-label">Відстежується</div>
+      <div class="stat-value" id="s-total" style="color:var(--text)">—</div>
+      <div class="stat-sub">товарних позицій</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label" style="color:var(--red)">🔴 Терміново</div>
+      <div class="stat-value" id="s-urgent" style="color:var(--red)">—</div>
+      <div class="stat-sub">запас &lt; 7 днів</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label" style="color:var(--yellow)">🟡 Незабаром</div>
+    2 <div class="stat-value" id="s-soon" style="color:var(--yellow)">—</div>
+      <div class="stat-sub">запас 7–14 днів</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label" style="color:var(--green)">🟢 В нормі</div>
+      <div class="stat-value" id="s-ok" style="color:var(--green)">—</div>
+      <div class="stat-sub">запас &gt; 14 днів</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Замовлень</div>
+      <div class="stat-value" id="s-orders" style="color:var(--accent)">—</div>
+      <div class="stat-sub">за останні 30 днів</div>
+    </div>
+  </div>
+
+  <!-- Main panel -->
+  <div class="panel">
+    <div class="toolbar">
+      <div class="tabs" id="tabs"></div>
+      <div class="controls">
+        <input class="search-input" id="search" type="text" placeholder="🔍 Пошук товару..." oninput="renderTable()">
+        <select class="sort-select" id="sort" onchange="renderTable()">
+          <option value="urgency">За терміновістю</option>
+          <option value="stock-asc">Залишок ↑</option>
+          <option value="stock-desc">Залишок ↓</option>
+          <option value="sales30">Продажі 30д ↓</option>
+          <option value="name">За назвою</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="table-wrap">
+      <div class="empty-state">
+        <div class="spinner"></div>
+        <span>Завантажую дані з KeyCRM…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI analysis -->
+  <div class="ai-wrap">
+    <button class="ai-btn-big" onclick="generateAnalysis()">
+      🤖 Проаналізувати і скласти рекомендоване замовлення
+    </button>
+    <div class="ai-output" id="ai-output"></div>
+  </div>
+
+</main>
+
+<script>
+  // ─── State ───────────────────────────────────────────
+  let allProducts = [];
+  let categories  = [];
+  let stockMap    = {};
+  let sales30     = {};
+  let sales7      = {};
+  let ordersCount = 0;
+  let currentCat  = 'all';
+  let nixCatIds   = new Set();
+
+  // ─── Load data ───────────────────────────────────────
+  async function loadData() {
+    document.getElementById('table-wrap').innerHTML =
+      '<div class="empty-state"><div class="spinner"></div><span>Завантажую дані з KeyCRM…</span></div>';
+
+    try {
+      const [pd, ad] = await Promise.all([
+        fetch('/.netlify/functions/products').then(r => r.json()),
+        fetch('/.netlify/functions/analytics').then(r => r.json())
+      ]);
+
+      if (pd.error) throw new Error('Products: ' + pd.error);
+      if (ad.error) throw new Error('Analytics: ' + ad.error);
+
+      categories  = pd.categories || [];
+      allProducts = pd.products   || [];
+      stockMap    = pd.stockMap   || {};
+      sales30     = ad.sales30    || {};
+      sales7      = ad.sales7     || {};
+      ordersCount = ad.ordersCount || 0;
+
+      detectNixCategories();
+      buildTabs();
+      updateStats();
+      renderTable();
+
+      document.getElementById('last-update').textContent =
+        'Оновлено: ' + new Date().toLocaleTimeString('uk-UA');
+
+    } catch (err) {
+      document.getElementById('table-wrap').innerHTML =
+        `<div class="empty-state" style="color:var(--red)">⚠️ ${err.message}</div>`;
+    }
+  }
+
+  // ─── Category detection ──────────────────────────────
+  function detectNixCategories() {
+    const kw = ['nixsense', 'shopper', 'шопер', 'eco', 'bestsell', 'бестселер', 'шкір'];
+    nixCatIds = new Set();
+    categories.forEach(c => {
+      if (kw.some(k => (c.name||'').toLowerCase().includes(k))) nixCatIds.add(c.id);
+    });
+    // If nothing matched, include everything
+    if (nixCatIds.size === 0) categories.forEach(c => nixCatIds.add(c.id));
+  }
+
+  // ─── Tabs ────────────────────────────────────────────
+  function buildTabs() {
+    const el = document.getElementById('tabs');
+    el.innerHTML = '';
+
+    const addTab = (catId, label) => {
+      const t = document.createElement('div');
+      t.className = 'tab' + (catId === currentCat ? ' active' : '');
+      t.dataset.cat = catId;
+
+      const items = getItemsForCat(catId);
+      t.innerHTML = label + `<span class="count-badge">${items.length}</span>`;
+      t.onclick = () => switchTab(t, catId);
+      el.appendChild(t);
+    };
+
+    addTab('all', 'Всі шопери');
+    categories.filter(c => nixCatIds.has(c.id)).forEach(c => addTab(c.id, c.name));
+  }
+
+  function switchTab(el, catId) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    currentCat = catId;
+    renderTable();
+  }
+
+  // ─── Compute items ───────────────────────────────────
+  function computeItem(product, offer) {
+    const offerId  = String(offer.id);
+    const stock    = stockMap[offerId] ?? 0;
+    const s30      = sales30[offerId] || sales30[`prod_${product.id}`] || 0;
+    const s7       = sales7[offerId]  || sales7[`prod_${product.id}`]  || 0;
+    const avgDaily = Math.round((s30 / 30) * 10) / 10;
+
+    let daysLeft, daysNum;
+    if (avgDaily <= 0) {
+      daysNum  = stock > 0 ? 9999 : 0;
+      daysLeft = stock > 0 ? '∞' : '0';
+    } else {
+      daysNum  = Math.round(stock / avgDaily);
+      daysLeft = daysNum + 'д';
+    }
+
+    let status, urgency;
+    if (avgDaily === 0 && stock === 0) { status = 'gray';   urgency = 99; }
+    else if (daysNum < 7)              { status = 'red';    urgency = 0;  }
+    else if (daysNum < 14)             { status = 'yellow'; urgency = 1;  }
+    else                               { status = 'green';  urgency = 2;  }
+
+    // Target: 45-day supply
+    const recommended = avgDaily > 0
+      ? Math.max(0, Math.ceil(avgDaily * 45 - stock))
+      : 0;
+
+    return {
+      productId: product.id,
+      offerId,
+      name: product.name || 'Без назви',
+      variant: (offer.name && offer.name !== product.name) ? offer.name : '',
+      sku: offer.sku || '',
+      categoryId: product.category_id,
+      stock, s30, s7, avgDaily, daysLeft, daysNum, recommended, status, urgency
+    };
+  }
+
+  function getItemsForCat(catId) {
+    const items = [];
+    allProducts.forEach(p => {
+      if (catId === 'all') {
+        if (!nixCatIds.has(p.category_id)) return;
+      } else {
+        if (String(p.category_id) !== String(catId)) return;
+      }
+      (p.offers || []).forEach(o => items.push(computeItem(p, o)));
+    });
+    return items;
+  }
+
+  function getFilteredSorted() {
+    let items = getItemsForCat(currentCat);
+
+    const q = (document.getElementById('search')?.value || '').toLowerCase();
+    if (q) items = items.filter(i =>
+      i.name.toLowerCase().includes(q) ||
+      i.variant.toLowerCase().includes(q) ||
+      i.sku.toLowerCase().includes(q)
+    );
+
+    const sort = document.getElementById('sort')?.value || 'urgency';
+    items.sort((a, b) => {
+      if (sort === 'urgency')    return a.urgency - b.urgency || b.s30 - a.s30;
+      if (sort === 'stock-asc')  return a.stock - b.stock;
+      if (sort === 'stock-desc') return b.stock - a.stock;
+      if (sort === 'sales30')    return b.s30 - a.s30;
+      if (sort === 'name')       return a.name.localeCompare(b.name, 'uk');
+      return 0;
+    });
+
+    return items;
+  }
+
+  // ─── Stats ───────────────────────────────────────────
+  function updateStats() {
+    const all = [];
+    allProducts.forEach(p => {
+      if (!nixCatIds.has(p.category_id)) return;
+      (p.offers || []).forEach(o => all.push(computeItem(p, o)));
+    });
+    document.getElementById('s-total').textContent  = all.length;
+    document.getElementById('s-urgent').textContent = all.filter(i => i.status === 'red').length;
+    document.getElementById('s-soon').textContent   = all.filter(i => i.status === 'yellow').length;
+    document.getElementById('s-ok').textContent     = all.filter(i => i.status === 'green').length;
+    document.getElementById('s-orders').textContent = ordersCount;
+  }
+
+  // ─── Render table ────────────────────────────────────
+  function renderTable() {
+    const items = getFilteredSorted();
+
+    if (items.length === 0) {
+      document.getElementById('table-wrap').innerHTML =
+        '<div class="empty-state">Товарів не знайдено</div>';
+      return;
+    }
+
+    const colorOf = { red: 'var(--red)', yellow: 'var(--yellow)', green: 'var(--green)', gray: 'var(--muted)' };
+    const badgeOf = {
+      red:    '<span class="badge badge-red">🔴 Терміново</span>',
+      yellow: '<span class="badge badge-yellow">🟡 Незабаром</span>',
+      green:  '<span class="badge badge-green">🟢 OK</span>',
+      gray:   '<span class="badge badge-gray">⚪ Немає продажів</span>',
+    };
+
+    let html = `
+      <table>
+        <thead><tr>
+          <th>Товар</th>
+          <th>Залишок</th>
+          <th>Продажі 7д</th>
+          <th>Продажі 30д</th>
+          <th>Сер./день</th>
+          <th>Днів запасу</th>
+          <th>Рекомендувати</th>
+        </tr></thead>
+        <tbody>
+    `;
+
+    items.forEach(i => {
+      const c = colorOf[i.status];
+      const barW = i.daysNum >= 60 ? 100 : Math.round((i.daysNum / 60) * 100);
+
+      html += `
+        <tr>
+          <td>
+            <div class="product-name">${esc(i.name)}</div>
+            ${i.variant ? `<div class="product-variant">${esc(i.variant)}</div>` : ''}
+            ${i.sku     ? `<div class="product-sku">${esc(i.sku)}</div>` : ''}
+            ${badgeOf[i.status]}
+          </td>
+          <td>
+            <span class="stock-val" style="color:${c}">${i.stock}</span>
+            <span class="stock-unit">шт</span>
+          </td>
+          <td style="color:${i.s7 > 0 ? 'var(--text)' : 'var(--muted)'}">
+            ${i.s7}
+          </td>
+          <td style="color:${i.s30 > 0 ? 'var(--text)' : 'var(--muted)'}">
+            ${i.s30}
+          </td>
+          <td style="color:var(--muted)">${i.avgDaily}</td>
+          <td>
+            <span style="font-weight:600;color:${c}">${i.daysLeft}</span>
+            <div class="days-bar">
+              <div class="days-fill" style="width:${barW}%;background:${c}"></div>
+            </div>
+          </td>
+          <td>
+            ${i.recommended > 0
+              ? `<span class="recommend-val" style="color:${c}">${i.recommended}</span><span class="stock-unit"> шт</span>`
+              : `<span style="color:var(--muted)">─</span>`
+            }
+          </td>
+        </tr>
+      `;
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('table-wrap').innerHTML = html;
+  }
+
+  // ─── AI Analysis ─────────────────────────────────────
+  function generateAnalysis() {
+    const items   = getFilteredSorted();
+    const urgent  = items.filter(i => i.status === 'red'    && i.recommended > 0);
+    const soon    = items.filter(i => i.status === 'yellow' && i.recommended > 0);
+    const noSales = items.filter(i => i.status === 'gray');
+    const total   = [...urgent, ...soon].reduce((s, i) => s + i.recommended, 0);
+    const today   = new Date().toLocaleDateString('uk-UA', { day:'numeric', month:'long', year:'numeric' });
+
+    const renderRows = (list, borderColor) => list.map(i => `
+      <div class="order-row">
+        <div>
+          <div class="order-name">${esc(i.name)}${i.variant ? ` <span style="color:var(--muted);font-size:11px">· ${esc(i.variant)}</span>` : ''}</div>
+          <div class="order-meta">Залишок: ${i.stock} шт · ${i.s30} продано за 30д · ~${i.avgDaily} шт/день · ${i.daysLeft} запасу</div>
+        </div>
+        <div style="text-align:right">
+          <div class="order-qty" style="color:${borderColor === 'red' ? 'var(--red)' : 'var(--yellow)'}">${i.recommended}</div>
+          <div class="order-unit">шт на 45 днів</div>
+        </div>
+      </div>
+    `).join('');
+
+    let html = `
+      <div class="ai-section-title">
+        🤖 Аналіз замовлення — ${today}
+        <button class="btn btn-ghost" onclick="exportCSV()" style="font-size:11px">⬇ Експортувати CSV</button>
+      </div>
+    `;
+
+    if (urgent.length) html += `
+      <div class="alert-block" style="background:var(--red-bg);border:1px solid var(--red-border)">
+        <div class="alert-title" style="color:var(--red)">🔴 ТЕРМІНОВО — ${urgent.length} позиці${pl(urgent.length)} (запас менше 7 днів)</div>
+        ${renderRows(urgent, 'red')}
+      </div>
+    `;
+
+    if (soon.length) html += `
+      <div class="alert-block" style="background:var(--yellow-bg);border:1px solid var(--yellow-border)">
+        <div class="alert-title" style="color:var(--yellow)">🟡 НЕЗАБАРОМ — ${soon.length} позиці${pl(soon.length)} (запас 7–14 днів)</div>
+        ${renderRows(soon, 'yellow')}
+      </div>
+    `;
+
+    if (!urgent.length && !soon.length) html += `
+      <div class="alert-block" style="background:var(--green-bg);border:1px solid var(--green-border);text-align:center;padding:24px">
+        <div style="font-size:36px;margin-bottom:8px">🟢</div>
+        <div style="color:var(--green);font-weight:700;font-size:15px">Всі запаси в нормі!</div>
+        <div style="color:var(--muted);font-size:12px;margin-top:4px">Термінових позицій для замовлення немає</div>
+      </div>
+    `;
+    else html += `
+      <div class="summary-pill">
+        📋 <b>Підсумок:</b> ${urgent.length + soon.length} позиці${pl(urgent.length+soon.length)},
+        загалом <b>${total} шт</b>
+        <span style="color:var(--muted)">(покриття на 45 днів за поточним темпом продажів)</span>
+      </div>
+    `;
+
+    if (noSales.length) html += `
+      <div style="margin-top:12px;font-size:12px;color:var(--muted);padding:0 4px">
+        ⚪ ${noSales.length} позиці${pl(noSales.length)} без продажів за 30 днів — рекомендується перевірити актуальність асортименту.
+      </div>
+    `;
+
+    const out = document.getElementById('ai-output');
+    out.innerHTML = html;
+    out.style.display = 'block';
+    out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ─── CSV Export ──────────────────────────────────────
+  function exportCSV() {
+    const items = getFilteredSorted().filter(i => i.recommended > 0);
+    if (!items.length) { alert('Нічого для замовлення'); return; }
+
+    let csv = '\uFEFF'; // BOM
+    csv += 'Товар,Варіант,SKU,Залишок (шт),Продажі 30д,Сер./день,Рекомендувати (шт),Статус\n';
+    items.forEach(i => {
+      csv += `"${i.name}","${i.variant}","${i.sku}",${i.stock},${i.s30},${i.avgDaily},${i.recommended},"${i.status === 'red' ? 'Терміново' : 'Незабаром'}"\n`;
+    });
+
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    Object.assign(document.createElement('a'), {
+      href: url,
+      download: `nixsense-order-${new Date().toISOString().slice(0,10)}.csv`
+    }).click();
+  }
+
+  // ─── Helpers ─────────────────────────────────────────
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const pl  = n => n === 1 ? 'я' : (n >= 2 && n <= 4 ? 'ї' : 'й');
+
+  // ─── Init ────────────────────────────────────────────
+  loadData();
+</script>
+</body>
+</html>
